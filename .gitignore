@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+
+# team-only lab material — never in the student-visible repo
+LAB-NOTES.md
+fix/

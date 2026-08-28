@@ -1,0 +1,5 @@
+.git
+fix/
+LAB-NOTES.md
+__pycache__/
+*.pyc

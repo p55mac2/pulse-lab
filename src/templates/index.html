@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pulse Check</title>
+<style>
+  :root {
+    --bg: #f4f4f4; --card: #ffffff; --ink: #161616; --sub: #525252;
+    --accent: #0f62fe; --good: #24a148; --bad: #da1e28; --border: #e0e0e0;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--ink);
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 2rem 1rem;
+  }
+  h1 { font-weight: 600; letter-spacing: -0.02em; }
+  .tagline { color: var(--sub); margin: 0.25rem 0 2rem; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 2rem; width: 100%; max-width: 30rem; margin-bottom: 1.5rem;
+  }
+  label { display: block; font-size: 0.85rem; color: var(--sub); margin: 1rem 0 0.25rem; }
+  input[type=text] {
+    width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 4px;
+    font-size: 1rem; background: var(--bg);
+  }
+  button {
+    font-size: 1rem; font-weight: 600; border: none; border-radius: 4px;
+    padding: 0.75rem 1.5rem; cursor: pointer; background: var(--accent); color: #fff;
+    margin-top: 1.25rem;
+  }
+  button:active { transform: scale(0.98); }
+  .banner {
+    width: 100%; max-width: 30rem; border-radius: 8px; padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem; border: 1px solid var(--bad); background: #fff1f1; color: var(--bad);
+  }
+  #arena { text-align: center; }
+  #big {
+    font-size: 3.25rem; font-weight: 700; min-height: 5rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #instruction { color: var(--sub); min-height: 1.5rem; }
+  #stop-btn { background: var(--bad); font-size: 1.5rem; padding: 1.25rem 3rem; display: none; }
+  .result-good { color: var(--good); }
+  .result-bad  { color: var(--bad); }
+  .stats { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1rem; }
+  .stat  { text-align: center; }
+  .stat .n { font-size: 1.75rem; font-weight: 700; }
+  .stat .l { font-size: 0.8rem; color: var(--sub); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--sub); font-weight: 500; font-size: 0.8rem; }
+  .who { color: var(--sub); font-size: 0.9rem; margin-bottom: 1rem; }
+</style>
+</head>
+<body>
+  <h1>⏱ Pulse Check</h1>
+  <p class="tagline">The AIOps warm-up: how good is <em>your</em> timing?</p>
+
+  {% if save_error %}
+  <div class="banner">
+    <strong>Your score couldn't be saved.</strong><br>
+    Something went wrong on our side — the run still counted in your heart.
+  </div>
+  {% endif %}
+
+  {% if not player %}
+  <div class="card">
+    <h2>Join the game</h2>
+    <form method="post" action="/register">
+      <label for="handle">Handle</label>
+      <input type="text" id="handle" name="handle" maxlength="40" required placeholder="stopwatch-steve">
+      <label for="team">Team / table</label>
+      <input type="text" id="team" name="team" maxlength="40" placeholder="Table 7">
+      <label for="region">Favourite IBM Cloud region</label>
+      <input type="text" id="region" name="region" maxlength="20" placeholder="us-south, obviously">
+      <button type="submit">Let's go</button>
+    </form>
+  </div>
+  {% else %}
+  <div class="card" id="arena">
+    <p class="who">Playing as <strong>{{ player.handle }}</strong>{% if player.team %} · {{ player.team }}{% endif %}</p>
+    <div id="big">Ready?</div>
+    <p id="instruction">Press START, then hit STOP as close to the target as you can.</p>
+    <button id="start-btn">START</button>
+    <button id="stop-btn">STOP</button>
+    <form id="score-form" method="post" action="/score">
+      <input type="hidden" name="target" id="f-target">
+      <input type="hidden" name="delta" id="f-delta">
+      <input type="hidden" name="points" id="f-points">
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="stats">
+      <div class="stat"><div class="n">{{ stats.best }}</div><div class="l">BEST SCORE</div></div>
+      <div class="stat"><div class="n">{{ stats.count }}</div><div class="l">ATTEMPTS</div></div>
+    </div>
+    {% if stats.recent %}
+    <table>
+      <tr><th>Target</th><th>Delta</th><th>Score</th></tr>
+      {% for a in stats.recent %}
+      <tr><td>{{ a.target }}s</td><td>{{ a.delta }}s</td><td>{{ a.score }}</td></tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+
+  <script>
+    const targets = [2.0, 2.5, 3.0, 3.5, 4.0];
+    const big = document.getElementById("big");
+    const instruction = document.getElementById("instruction");
+    const startBtn = document.getElementById("start-btn");
+    const stopBtn = document.getElementById("stop-btn");
+    let target = 0, t0 = 0;
+
+    startBtn.addEventListener("click", () => {
+      target = targets[Math.floor(Math.random() * targets.length)];
+      startBtn.style.display = "none";
+      instruction.textContent = `Target: ${target.toFixed(1)} seconds. Get ready…`;
+      let count = 3;
+      big.textContent = count;
+      const tick = setInterval(() => {
+        count -= 1;
+        if (count > 0) { big.textContent = count; return; }
+        clearInterval(tick);
+        big.textContent = "GO";
+        stopBtn.style.display = "inline-block";
+        t0 = performance.now();
+      }, 700);
+    });
+
+    stopBtn.addEventListener("click", () => {
+      const elapsed = (performance.now() - t0) / 1000;
+      const delta = elapsed - target;
+      const points = Math.max(0, 1000 - Math.round(Math.abs(delta) * 1000));
+      const deltaLabel = `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}s`;
+      stopBtn.style.display = "none";
+      big.textContent = deltaLabel;
+      big.className = Math.abs(delta) <= 0.15 ? "result-good" : "result-bad";
+      instruction.textContent = `You stopped at ${elapsed.toFixed(2)}s — ${points} points. Saving…`;
+      document.getElementById("f-target").value = target.toFixed(1);
+      document.getElementById("f-delta").value = deltaLabel;
+      document.getElementById("f-points").value = points;
+      setTimeout(() => document.getElementById("score-form").submit(), 900);
+    });
+  </script>
+  {% endif %}
+</body>
+</html>

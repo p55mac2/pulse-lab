@@ -1,0 +1,167 @@
+import logging
+import os
+import sys
+from pathlib import Path
+
+import psycopg2
+from flask import (
+    Flask,
+    jsonify,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+log = logging.getLogger("pulse-check")
+
+app = Flask(__name__)
+
+
+def db():
+    return psycopg2.connect(os.environ["DATABASE_URL"])
+
+
+def init_db():
+    schema = (Path(__file__).parent.parent / "schema.sql").read_text()
+    with db() as conn, conn.cursor() as cur:
+        cur.execute(schema)
+    log.info("Schema applied.")
+
+
+def current_player(cur, player_id):
+    if not player_id:
+        return None
+    cur.execute("SELECT id, handle, team, region FROM players WHERE id = %s", (player_id,))
+    row = cur.fetchone()
+    if not row:
+        return None
+    return {"id": row[0], "handle": row[1], "team": row[2], "region": row[3]}
+
+
+def player_stats(cur, player_id):
+    cur.execute(
+        """
+        SELECT COUNT(*), COALESCE(MAX(score), 0)
+        FROM attempts WHERE player_id = %s
+        """,
+        (player_id,),
+    )
+    count, best = cur.fetchone()
+    cur.execute(
+        """
+        SELECT target_seconds, delta_seconds, score, played_at
+        FROM attempts WHERE player_id = %s
+        ORDER BY played_at DESC LIMIT 5
+        """,
+        (player_id,),
+    )
+    recent = [
+        {"target": t, "delta": d, "score": s, "played_at": p}
+        for t, d, s, p in cur.fetchall()
+    ]
+    return {"count": count, "best": best, "recent": recent}
+
+
+@app.get("/")
+def index():
+    player_id = request.cookies.get("player_id")
+    with db() as conn, conn.cursor() as cur:
+        player = current_player(cur, player_id)
+        if not player:
+            resp = make_response(render_template("index.html", player=None))
+            resp.delete_cookie("player_id")
+            return resp
+        stats = player_stats(cur, player["id"])
+    return render_template(
+        "index.html",
+        player=player,
+        stats=stats,
+        save_error=request.args.get("save_error") == "1",
+    )
+
+
+@app.post("/register")
+def register():
+    handle = request.form.get("handle", "").strip()
+    team = request.form.get("team", "").strip()
+    region = request.form.get("region", "").strip()
+    if not handle:
+        return redirect(url_for("index"))
+    try:
+        with db() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO players (handle, team, region) VALUES (%s, %s, %s)
+                ON CONFLICT (handle) DO UPDATE SET team = EXCLUDED.team, region = EXCLUDED.region
+                RETURNING id
+                """,
+                (handle, team, region),
+            )
+            player_id = cur.fetchone()[0]
+    except Exception:
+        log.exception("Failed to register player handle=%r", handle)
+        return "Registration failed — see application logs.", 500
+    resp = make_response(redirect(url_for("index")))
+    resp.set_cookie("player_id", str(player_id), max_age=60 * 60 * 24)
+    log.info("Player registered: handle=%r id=%s", handle, player_id)
+    return resp
+
+
+@app.post("/score")
+def score():
+    player_id = request.cookies.get("player_id")
+    target = request.form.get("target", "")
+    delta = request.form.get("delta", "")
+    points = request.form.get("points", "")
+    try:
+        with db() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO attempts (player_id, target_seconds, delta_seconds, score)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (player_id, target, delta, points),
+            )
+    except Exception:
+        log.exception(
+            "Failed to save attempt: player_id=%r target=%r delta=%r points=%r",
+            player_id,
+            target,
+            delta,
+            points,
+        )
+        return redirect(url_for("index", save_error=1))
+    log.info("Attempt saved: player_id=%s target=%s delta=%s points=%s", player_id, target, delta, points)
+    return redirect(url_for("index"))
+
+
+@app.get("/health")
+def health():
+    try:
+        with db() as conn, conn.cursor() as cur:
+            cur.execute("SELECT 1")
+        return jsonify(status="ok")
+    except Exception:
+        log.exception("Health check failed")
+        return jsonify(status="degraded"), 503
+
+
+@app.get("/summary")
+def summary():
+    if os.getenv("INFERENCE_ENABLED", "").lower() != "true":
+        return jsonify(summary="Inference summary is not enabled (set INFERENCE_ENABLED=true)."), 501
+    # Stretch module: call the inference service to summarize recent play activity.
+    return jsonify(summary="Inference wiring not implemented in this build."), 501
+
+
+init_db()
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "8080")))
