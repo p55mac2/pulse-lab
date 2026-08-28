@@ -67,7 +67,13 @@
   </div>
   {% endif %}
 
-  {% if not player %}
+  {% if no_database %}
+  <div class="banner">
+    <strong>⏳ Waiting for a database.</strong><br>
+    The app is running, but no PostgreSQL connection is configured yet.
+    Once <code>DATABASE_URL</code> is set, the game is on.
+  </div>
+  {% elif not player %}
   <div class="card">
     <h2>Join the game</h2>
     <form method="post" action="/register">

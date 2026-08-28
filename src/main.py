@@ -24,15 +24,25 @@ log = logging.getLogger("pulse-check")
 app = Flask(__name__)
 
 
+def db_configured():
+    return bool(os.getenv("DATABASE_URL"))
+
+
 def db():
     return psycopg2.connect(os.environ["DATABASE_URL"])
 
 
 def init_db():
-    schema = (Path(__file__).parent.parent / "schema.sql").read_text()
-    with db() as conn, conn.cursor() as cur:
-        cur.execute(schema)
-    log.info("Schema applied.")
+    if not db_configured():
+        log.warning("DATABASE_URL is not set — starting without a database.")
+        return
+    try:
+        schema = (Path(__file__).parent.parent / "schema.sql").read_text()
+        with db() as conn, conn.cursor() as cur:
+            cur.execute(schema)
+        log.info("Schema applied.")
+    except Exception:
+        log.exception("Could not apply schema at startup.")
 
 
 def current_player(cur, player_id):
@@ -71,6 +81,8 @@ def player_stats(cur, player_id):
 
 @app.get("/")
 def index():
+    if not db_configured():
+        return render_template("index.html", player=None, no_database=True)
     player_id = request.cookies.get("player_id")
     with db() as conn, conn.cursor() as cur:
         player = current_player(cur, player_id)
@@ -144,6 +156,8 @@ def score():
 
 @app.get("/health")
 def health():
+    if not db_configured():
+        return jsonify(status="degraded", reason="database not configured"), 503
     try:
         with db() as conn, conn.cursor() as cur:
             cur.execute("SELECT 1")
