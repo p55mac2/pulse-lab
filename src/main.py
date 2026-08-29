@@ -39,7 +39,10 @@ def init_db():
     try:
         schema = (Path(__file__).parent.parent / "schema.sql").read_text()
         with db() as conn, conn.cursor() as cur:
+            # serialize workers: IF NOT EXISTS races at the catalog level
+            cur.execute("SELECT pg_advisory_lock(4414)")
             cur.execute(schema)
+            cur.execute("SELECT pg_advisory_unlock(4414)")
         log.info("Schema applied.")
     except Exception:
         log.exception("Could not apply schema at startup.")
