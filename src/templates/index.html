@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pulse Check</title>
+<title>Time Check</title>
 <style>
   :root {
     --bg: #f4f4f4; --card: #ffffff; --ink: #161616; --sub: #525252;
@@ -57,8 +57,8 @@
 </style>
 </head>
 <body>
-  <h1>⏱ Pulse Check</h1>
-  <p class="tagline">The AIOps warm-up: how good is <em>your</em> timing?</p>
+  <h1>⏱ Time Check</h1>
+  <p class="tagline">How good is <em>your</em> timing?</p>
 
   {% if save_error %}
   <div class="banner">
@@ -78,17 +78,21 @@
     <h2>Join the game</h2>
     <form method="post" action="/register">
       <label for="handle">Handle</label>
-      <input type="text" id="handle" name="handle" maxlength="40" required placeholder="stopwatch-steve">
-      <label for="team">Team / table</label>
-      <input type="text" id="team" name="team" maxlength="40" placeholder="Table 7">
-      <label for="region">Favourite IBM Cloud region</label>
-      <input type="text" id="region" name="region" maxlength="20" placeholder="us-south, obviously">
+      <input type="text" id="handle" name="handle" maxlength="40" required>
+      <label for="company">Company</label>
+      <input type="text" id="company" name="company" maxlength="60">
+      <label for="fav_food">Favourite food</label>
+      <input type="text" id="fav_food" name="fav_food" maxlength="60">
+      <label for="fav_movie">Favourite movie</label>
+      <input type="text" id="fav_movie" name="fav_movie" maxlength="60">
+      <label for="fav_holiday">Favourite holiday</label>
+      <input type="text" id="fav_holiday" name="fav_holiday" maxlength="60">
       <button type="submit">Let's go</button>
     </form>
   </div>
   {% else %}
   <div class="card" id="arena">
-    <p class="who">Playing as <strong>{{ player.handle }}</strong>{% if player.team %} · {{ player.team }}{% endif %}</p>
+    <p class="who">Playing as <strong>{{ player.handle }}</strong>{% if player.company %} · {{ player.company }}{% endif %}</p>
     <div id="big">Ready?</div>
     <p id="instruction">Press START, then hit STOP as close to the target as you can.</p>
     <button id="start-btn">START</button>

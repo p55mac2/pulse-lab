@@ -1,11 +1,13 @@
 -- Pulse Check schema. Applied automatically at app startup (idempotent).
 
 CREATE TABLE IF NOT EXISTS players (
-    id          SERIAL PRIMARY KEY,
-    handle      TEXT NOT NULL UNIQUE,
-    team        TEXT,
-    region      TEXT,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    id           SERIAL PRIMARY KEY,
+    handle       TEXT NOT NULL UNIQUE,
+    company      TEXT,
+    fav_food     TEXT,
+    fav_movie    TEXT,
+    fav_holiday  TEXT,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS attempts (

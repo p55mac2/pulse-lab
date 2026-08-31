@@ -51,11 +51,11 @@ def init_db():
 def current_player(cur, player_id):
     if not player_id:
         return None
-    cur.execute("SELECT id, handle, team, region FROM players WHERE id = %s", (player_id,))
+    cur.execute("SELECT id, handle, company FROM players WHERE id = %s", (player_id,))
     row = cur.fetchone()
     if not row:
         return None
-    return {"id": row[0], "handle": row[1], "team": row[2], "region": row[3]}
+    return {"id": row[0], "handle": row[1], "company": row[2]}
 
 
 def player_stats(cur, player_id):
@@ -105,19 +105,24 @@ def index():
 @app.post("/register")
 def register():
     handle = request.form.get("handle", "").strip()
-    team = request.form.get("team", "").strip()
-    region = request.form.get("region", "").strip()
+    company = request.form.get("company", "").strip()
+    fav_food = request.form.get("fav_food", "").strip()
+    fav_movie = request.form.get("fav_movie", "").strip()
+    fav_holiday = request.form.get("fav_holiday", "").strip()
     if not handle:
         return redirect(url_for("index"))
     try:
         with db() as conn, conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO players (handle, team, region) VALUES (%s, %s, %s)
-                ON CONFLICT (handle) DO UPDATE SET team = EXCLUDED.team, region = EXCLUDED.region
+                INSERT INTO players (handle, company, fav_food, fav_movie, fav_holiday)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (handle) DO UPDATE SET
+                    company = EXCLUDED.company, fav_food = EXCLUDED.fav_food,
+                    fav_movie = EXCLUDED.fav_movie, fav_holiday = EXCLUDED.fav_holiday
                 RETURNING id
                 """,
-                (handle, team, region),
+                (handle, company, fav_food, fav_movie, fav_holiday),
             )
             player_id = cur.fetchone()[0]
     except Exception:

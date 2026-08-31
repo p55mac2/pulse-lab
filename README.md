@@ -1,4 +1,4 @@
-# ⏱ Pulse Check
+# ⏱ Time Check
 
 A tiny reaction-timing game for IBM Cloud Code Engine. Register a handle, then hit STOP as close to the target time as you can — scored by closeness, best score on your dashboard.
 
