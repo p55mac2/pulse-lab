@@ -4,160 +4,393 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Time Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap">
 <style>
+  /* Carbon Design System tokens — g10 theme, with a g100 (dark) game arena */
   :root {
-    --bg: #f4f4f4; --card: #ffffff; --ink: #161616; --sub: #525252;
-    --accent: #0f62fe; --good: #24a148; --bad: #da1e28; --border: #e0e0e0;
+    --background: #f4f4f4;
+    --layer: #ffffff;
+    --layer-accent: #e0e0e0;
+    --field: #f4f4f4;
+    --border-subtle: #e0e0e0;
+    --border-strong: #8d8d8d;
+    --text-primary: #161616;
+    --text-secondary: #525252;
+    --text-helper: #6f6f6f;
+    --interactive: #0f62fe;
+    --focus: #0f62fe;
+    --button-primary: #0f62fe;
+    --button-primary-hover: #0050e6;
+    --button-primary-active: #002d9c;
+    --button-danger: #da1e28;
+    --button-danger-hover: #b81921;
+    --button-danger-active: #750e13;
+    --support-error: #da1e28;
+    --support-info: #0043ce;
+    --notification-error-bg: #fff1f1;
+    --notification-info-bg: #edf5ff;
+
+    --g100-background: #161616;
+    --g100-border: #393939;
+    --g100-text-primary: #f4f4f4;
+    --g100-text-secondary: #c6c6c6;
+    --g100-success: #42be65;
+    --g100-error: #fa4d56;
+
+    --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", Menlo, "Courier New", monospace;
   }
-  * { box-sizing: border-box; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg); color: var(--ink);
-    display: flex; flex-direction: column; align-items: center;
-    min-height: 100vh; padding: 2rem 1rem;
+    font-family: var(--sans);
+    font-size: 1rem; line-height: 1.5;
+    background: var(--background); color: var(--text-primary);
+    min-height: 100vh; display: flex; flex-direction: column;
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { font-weight: 600; letter-spacing: -0.02em; }
-  .tagline { color: var(--sub); margin: 0.25rem 0 2rem; }
-  .card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
-    padding: 2rem; width: 100%; max-width: 30rem; margin-bottom: 1.5rem;
+  code { font-family: var(--mono); font-size: 0.875rem; }
+
+  /* UI shell header */
+  .shell {
+    height: 3rem; display: flex; align-items: center; justify-content: space-between;
+    background: var(--g100-background); border-bottom: 1px solid var(--g100-border);
+    color: var(--g100-text-primary); padding: 0 1rem;
   }
-  label { display: block; font-size: 0.85rem; color: var(--sub); margin: 1rem 0 0.25rem; }
+  .shell__name {
+    color: inherit; text-decoration: none; font-size: 0.875rem; font-weight: 600;
+    letter-spacing: 0.1px; height: 100%; display: flex; align-items: center;
+  }
+  .shell__name span { font-weight: 400; }
+  .shell__name:focus-visible { outline: 2px solid #ffffff; outline-offset: -2px; }
+  .shell__meta { font-size: 0.75rem; letter-spacing: 0.32px; color: var(--g100-text-secondary); }
+
+  .page { width: 100%; max-width: 66rem; margin: 0 auto; padding: 0 1rem; flex: 1; }
+
+  .hero { padding: 3rem 0 2rem; }
+  .hero h1 {
+    font-weight: 300; font-size: clamp(2.625rem, 6vw, 3.75rem);
+    line-height: 1.17; letter-spacing: 0;
+  }
+  .tagline { font-size: 1.25rem; font-weight: 300; line-height: 1.4; color: var(--text-secondary); margin-top: 0.5rem; }
+
+  /* Inline notifications (low contrast) */
+  .notification {
+    display: flex; gap: 0.75rem; align-items: flex-start;
+    padding: 0.9375rem 1rem 0.9375rem 0.8125rem; margin-bottom: 2rem;
+    font-size: 0.875rem; line-height: 1.43; letter-spacing: 0.16px;
+    border-left: 3px solid;
+  }
+  .notification svg { flex: none; margin-top: 0; }
+  .notification strong { display: block; font-weight: 600; }
+  .notification--error {
+    background: var(--notification-error-bg); border-color: var(--support-error);
+    box-shadow: inset 0 0 0 1px rgba(218, 30, 40, 0.25);
+  }
+  .notification--info {
+    background: var(--notification-info-bg); border-color: var(--support-info);
+    box-shadow: inset 0 0 0 1px rgba(0, 67, 206, 0.25);
+  }
+  .notification code { background: rgba(0, 0, 0, 0.06); padding: 0 0.25rem; }
+
+  .tile { background: var(--layer); padding: 2rem 1.5rem; }
+  .grid { display: grid; gap: 1px; margin-bottom: 3rem; }
+
+  /* Buttons */
+  button, .btn {
+    position: relative; display: inline-block; text-align: left;
+    font-family: inherit; font-size: 0.875rem; font-weight: 400; letter-spacing: 0.16px;
+    min-height: 3rem; padding: 0.875rem 4rem 0.875rem 1rem;
+    border: 1px solid transparent; border-radius: 0; cursor: pointer;
+    background: var(--button-primary); color: #ffffff;
+    transition: background 70ms cubic-bezier(0, 0, 0.38, 0.9);
+  }
+  button svg { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); fill: currentColor; }
+  button:hover { background: var(--button-primary-hover); }
+  button:active { background: var(--button-primary-active); }
+  button:focus-visible {
+    outline: none; border-color: var(--focus);
+    box-shadow: inset 0 0 0 1px var(--focus), inset 0 0 0 2px #ffffff;
+  }
+
+  /* Registration */
+  .join h2 { font-size: 2rem; font-weight: 400; line-height: 1.25; }
+  .join .lead { color: var(--text-secondary); margin: 1rem 0 2rem; max-width: 28rem; }
+  .steps { list-style: none; border-top: 1px solid var(--border-subtle); }
+  .steps li {
+    display: flex; gap: 1rem; padding: 1rem 0;
+    border-bottom: 1px solid var(--border-subtle); font-size: 0.875rem; letter-spacing: 0.16px;
+  }
+  .steps .num { font-family: var(--mono); color: var(--interactive); }
+  .field { margin-bottom: 1.5rem; }
+  label {
+    display: block; font-size: 0.75rem; line-height: 1.33; letter-spacing: 0.32px;
+    color: var(--text-secondary); margin-bottom: 0.5rem;
+  }
+  label .opt { color: var(--text-helper); }
   input[type=text] {
-    width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 4px;
-    font-size: 1rem; background: var(--bg);
+    width: 100%; height: 3rem; padding: 0 1rem;
+    font-family: inherit; font-size: 0.875rem; letter-spacing: 0.16px; color: var(--text-primary);
+    background: var(--field); border: none; border-bottom: 1px solid var(--border-strong); border-radius: 0;
   }
-  button {
-    font-size: 1rem; font-weight: 600; border: none; border-radius: 4px;
-    padding: 0.75rem 1.5rem; cursor: pointer; background: var(--accent); color: #fff;
-    margin-top: 1.25rem;
+  input[type=text]:focus { outline: 2px solid var(--focus); outline-offset: -2px; }
+  .join form button { width: 100%; margin-top: 0.5rem; }
+
+  /* Game arena (g100) */
+  #arena {
+    position: relative; overflow: hidden;
+    background: var(--g100-background); color: var(--g100-text-primary);
+    padding: 1.5rem 1.5rem 3.5rem; text-align: center;
   }
-  button:active { transform: scale(0.98); }
-  .banner {
-    width: 100%; max-width: 30rem; border-radius: 8px; padding: 1rem 1.25rem;
-    margin-bottom: 1.5rem; border: 1px solid var(--bad); background: #fff1f1; color: var(--bad);
+  #arena::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 0.75rem;
+    background:
+      repeating-linear-gradient(90deg, #6f6f6f 0 1px, transparent 1px 80px) bottom / 100% 0.75rem no-repeat,
+      repeating-linear-gradient(90deg, #393939 0 1px, transparent 1px 16px) bottom / 100% 0.375rem no-repeat;
   }
-  #arena { text-align: center; }
+  .who { text-align: left; font-size: 0.875rem; letter-spacing: 0.16px; color: var(--g100-text-secondary); }
+  .who strong { color: var(--g100-text-primary); font-weight: 600; }
   #big {
-    font-size: 3.25rem; font-weight: 700; min-height: 5rem;
-    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-weight: 300; font-size: clamp(4rem, 13vw, 7.5rem);
+    line-height: 1; letter-spacing: -0.02em; min-height: 11rem;
+    display: flex; align-items: center; justify-content: center; margin-top: 1rem;
   }
-  #instruction { color: var(--sub); min-height: 1.5rem; }
-  #stop-btn { background: var(--bad); font-size: 1.5rem; padding: 1.25rem 3rem; display: none; }
-  .result-good { color: var(--good); }
-  .result-bad  { color: var(--bad); }
-  .stats { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1rem; }
-  .stat  { text-align: center; }
-  .stat .n { font-size: 1.75rem; font-weight: 700; }
-  .stat .l { font-size: 0.8rem; color: var(--sub); }
-  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-  th, td { text-align: left; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--border); }
-  th { color: var(--sub); font-weight: 500; font-size: 0.8rem; }
-  .who { color: var(--sub); font-size: 0.9rem; margin-bottom: 1rem; }
+  #instruction { color: var(--g100-text-secondary); min-height: 3rem; max-width: 30rem; margin: 0 auto; text-wrap: balance; }
+  .controls { min-height: 5.5rem; padding-top: 1.5rem; }
+  #arena button { min-width: 16rem; min-height: 4rem; font-size: 1rem; }
+  #arena button:focus-visible {
+    border-color: #ffffff;
+    box-shadow: inset 0 0 0 1px #ffffff, inset 0 0 0 2px var(--g100-background);
+  }
+  #stop-btn { display: none; background: var(--button-danger); }
+  #stop-btn:hover { background: var(--button-danger-hover); }
+  #stop-btn:active { background: var(--button-danger-active); }
+  .result-good { color: var(--g100-success); }
+  .result-bad  { color: var(--g100-error); }
+
+  /* Stats + recent attempts */
+  .stats h2, .recent h2 { font-size: 1.25rem; font-weight: 400; line-height: 1.4; margin-bottom: 1.5rem; }
+  .metric + .metric { margin-top: 1.5rem; }
+  .metric .l { font-size: 0.75rem; letter-spacing: 0.32px; color: var(--text-secondary); }
+  .metric .n { font-size: 2.625rem; font-weight: 300; line-height: 1.2; }
+  .metric .n small { font-size: 0.875rem; font-weight: 400; color: var(--text-helper); letter-spacing: 0.16px; }
+  .meter { height: 0.5rem; background: var(--layer-accent); margin-top: 0.5rem; }
+  .meter span { display: block; height: 100%; background: var(--interactive); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; letter-spacing: 0.16px; }
+  th {
+    background: var(--layer-accent); font-weight: 600; text-align: left;
+    height: 3rem; padding: 0 1rem;
+  }
+  td { height: 2.5rem; padding: 0 1rem; border-bottom: 1px solid var(--border-subtle); font-family: var(--mono); }
+  th.num, td.num { text-align: right; }
+  td.close { color: #198038; }
+  .empty { font-size: 0.875rem; letter-spacing: 0.16px; color: var(--text-secondary); padding: 1.5rem 1rem; background: var(--background); }
+
+  footer {
+    max-width: 66rem; width: 100%; margin: 0 auto; padding: 1.5rem 1rem 2rem;
+    font-size: 0.75rem; letter-spacing: 0.32px; color: var(--text-helper);
+  }
+
+  @media (min-width: 42rem) {
+    .shell { padding: 0 1rem 0 1rem; }
+    .page, footer { padding-left: 2rem; padding-right: 2rem; }
+    .tile { padding: 2rem; }
+    #arena { padding: 2rem 2rem 4rem; }
+  }
+  @media (min-width: 66rem) {
+    .hero { padding: 4rem 0 2.5rem; }
+    .join { grid-template-columns: 1fr 1fr; }
+    .join .intro { padding-right: 2rem; }
+    .game { grid-template-columns: 2fr 1fr; }
+    .game .recent { grid-column: 1 / -1; }
+  }
 </style>
 </head>
 <body>
-  <h1>⏱ Time Check</h1>
-  <p class="tagline">How good is <em>your</em> timing?</p>
+  <header class="shell">
+    <a class="shell__name" href="/"><span>IBM</span>&nbsp;Time Check</a>
+    <span class="shell__meta">Reaction-timing game</span>
+  </header>
 
-  {% if save_error %}
-  <div class="banner">
-    <strong>Your score couldn't be saved.</strong><br>
-    Something went wrong on our side — the run still counted in your heart.
-  </div>
-  {% endif %}
+  <main class="page">
+    <section class="hero">
+      <h1>Time Check</h1>
+      <p class="tagline">How good is <em>your</em> timing?</p>
+    </section>
 
-  {% if no_database %}
-  <div class="banner">
-    <strong>⏳ Waiting for a database.</strong><br>
-    The app is running, but no PostgreSQL connection is configured yet.
-    Once <code>DATABASE_URL</code> is set, the game is on.
-  </div>
-  {% elif not player %}
-  <div class="card">
-    <h2>Join the game</h2>
-    <form method="post" action="/register">
-      <label for="handle">Handle</label>
-      <input type="text" id="handle" name="handle" maxlength="40" required>
-      <label for="company">Company</label>
-      <input type="text" id="company" name="company" maxlength="60">
-      <label for="fav_food">Favourite food</label>
-      <input type="text" id="fav_food" name="fav_food" maxlength="60">
-      <label for="fav_movie">Favourite movie</label>
-      <input type="text" id="fav_movie" name="fav_movie" maxlength="60">
-      <label for="fav_holiday">Favourite holiday</label>
-      <input type="text" id="fav_holiday" name="fav_holiday" maxlength="60">
-      <button type="submit">Let's go</button>
-    </form>
-  </div>
-  {% else %}
-  <div class="card" id="arena">
-    <p class="who">Playing as <strong>{{ player.handle }}</strong>{% if player.company %} · {{ player.company }}{% endif %}</p>
-    <div id="big">Ready?</div>
-    <p id="instruction">Press START, then hit STOP as close to the target as you can.</p>
-    <button id="start-btn">START</button>
-    <button id="stop-btn">STOP</button>
-    <form id="score-form" method="post" action="/score">
-      <input type="hidden" name="target" id="f-target">
-      <input type="hidden" name="delta" id="f-delta">
-      <input type="hidden" name="points" id="f-points">
-    </form>
-  </div>
-
-  <div class="card">
-    <div class="stats">
-      <div class="stat"><div class="n">{{ stats.best }}</div><div class="l">BEST SCORE</div></div>
-      <div class="stat"><div class="n">{{ stats.count }}</div><div class="l">ATTEMPTS</div></div>
+    {% if save_error %}
+    <div class="notification notification--error" role="alert">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#da1e28"/><rect x="9" y="4.5" width="2" height="7" fill="#fff"/><rect x="9" y="13.5" width="2" height="2" fill="#fff"/></svg>
+      <div>
+        <strong>Your score couldn't be saved.</strong>
+        Something went wrong on our side — the run still counted in your heart.
+      </div>
     </div>
-    {% if stats.recent %}
-    <table>
-      <tr><th>Target</th><th>Delta</th><th>Score</th></tr>
-      {% for a in stats.recent %}
-      <tr><td>{{ a.target }}s</td><td>{{ a.delta }}s</td><td>{{ a.score }}</td></tr>
-      {% endfor %}
-    </table>
     {% endif %}
-  </div>
 
-  <script>
-    const targets = [2.0, 2.5, 3.0, 3.5, 4.0];
-    const big = document.getElementById("big");
-    const instruction = document.getElementById("instruction");
-    const startBtn = document.getElementById("start-btn");
-    const stopBtn = document.getElementById("stop-btn");
-    let target = 0, t0 = 0;
+    {% if no_database %}
+    <div class="notification notification--info" role="status">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#0043ce"/><rect x="9" y="8.5" width="2" height="7" fill="#fff"/><rect x="9" y="4.5" width="2" height="2" fill="#fff"/></svg>
+      <div>
+        <strong>Waiting for a database.</strong>
+        The app is running, but no PostgreSQL connection is configured yet.
+        Once <code>DATABASE_URL</code> is set, the game is on.
+      </div>
+    </div>
+    {% elif not player %}
+    <div class="grid join">
+      <section class="tile intro">
+        <h2>Join the game</h2>
+        <p class="lead">Register a handle, then hit STOP as close to the target time as you can. Your best score lands on your dashboard.</p>
+        <ol class="steps">
+          <li><span class="num">01</span><span>Press START. You get a target between 2 and 4 seconds.</span></li>
+          <li><span class="num">02</span><span>Count down from 3 and wait for GO.</span></li>
+          <li><span class="num">03</span><span>Hit STOP on the target. Score: 1000 minus your miss in milliseconds.</span></li>
+        </ol>
+      </section>
+      <section class="tile">
+        <form method="post" action="/register">
+          <div class="field">
+            <label for="handle">Handle</label>
+            <input type="text" id="handle" name="handle" maxlength="40" required>
+          </div>
+          <div class="field">
+            <label for="company">Company <span class="opt">(optional)</span></label>
+            <input type="text" id="company" name="company" maxlength="60">
+          </div>
+          <div class="field">
+            <label for="fav_food">Favourite food <span class="opt">(optional)</span></label>
+            <input type="text" id="fav_food" name="fav_food" maxlength="60">
+          </div>
+          <div class="field">
+            <label for="fav_movie">Favourite movie <span class="opt">(optional)</span></label>
+            <input type="text" id="fav_movie" name="fav_movie" maxlength="60">
+          </div>
+          <div class="field">
+            <label for="fav_holiday">Favourite holiday <span class="opt">(optional)</span></label>
+            <input type="text" id="fav_holiday" name="fav_holiday" maxlength="60">
+          </div>
+          <button type="submit">Let's go
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M9.3 3.3 8.6 4l3.5 3.5H2v1h10.1L8.6 12l.7.7L14 8z"/></svg>
+          </button>
+        </form>
+      </section>
+    </div>
+    {% else %}
+    <div class="grid game">
+      <section id="arena">
+        <p class="who">Playing as <strong>{{ player.handle }}</strong>{% if player.company %} · {{ player.company }}{% endif %}</p>
+        <div id="big">Ready?</div>
+        <p id="instruction">Press START, then hit STOP as close to the target as you can.</p>
+        <div class="controls">
+          <button id="start-btn">START
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3.5v13l11-6.5z"/></svg>
+          </button>
+          <button id="stop-btn">STOP
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="4.5" y="4.5" width="11" height="11"/></svg>
+          </button>
+        </div>
+        <form id="score-form" method="post" action="/score">
+          <input type="hidden" name="target" id="f-target">
+          <input type="hidden" name="delta" id="f-delta">
+          <input type="hidden" name="points" id="f-points">
+        </form>
+      </section>
 
-    startBtn.addEventListener("click", () => {
-      target = targets[Math.floor(Math.random() * targets.length)];
-      startBtn.style.display = "none";
-      instruction.textContent = `Target: ${target.toFixed(1)} seconds. Get ready…`;
-      let count = 3;
-      big.textContent = count;
-      const tick = setInterval(() => {
-        count -= 1;
-        if (count > 0) { big.textContent = count; return; }
-        clearInterval(tick);
-        big.textContent = "GO";
-        stopBtn.style.display = "inline-block";
-        t0 = performance.now();
-      }, 700);
-    });
+      <section class="tile stats">
+        <h2>Your stats</h2>
+        <div class="metric">
+          <div class="l">Best score</div>
+          <div class="n">{{ stats.best }} <small>/ 1000</small></div>
+          <div class="meter" role="progressbar" aria-label="Best score out of 1000" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="{{ stats.best }}"><span style="width: {{ (stats.best / 10)|round(1) }}%"></span></div>
+        </div>
+        <div class="metric">
+          <div class="l">Attempts</div>
+          <div class="n">{{ stats.count }}</div>
+        </div>
+      </section>
 
-    stopBtn.addEventListener("click", () => {
-      const elapsed = (performance.now() - t0) / 1000;
-      const delta = elapsed - target;
-      const points = Math.max(0, 1000 - Math.round(Math.abs(delta) * 1000));
-      const deltaLabel = `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}s`;
-      stopBtn.style.display = "none";
-      big.textContent = deltaLabel;
-      big.className = Math.abs(delta) <= 0.15 ? "result-good" : "result-bad";
-      instruction.textContent = `You stopped at ${elapsed.toFixed(2)}s — ${points} points. Saving…`;
-      document.getElementById("f-target").value = target.toFixed(1);
-      document.getElementById("f-delta").value = deltaLabel;
-      document.getElementById("f-points").value = points;
-      setTimeout(() => document.getElementById("score-form").submit(), 900);
-    });
-  </script>
-  {% endif %}
+      <section class="tile recent">
+        <h2>Recent attempts</h2>
+        {% if stats.recent %}
+        <table>
+          <tr><th>Target</th><th class="num">Delta</th><th class="num">Score</th></tr>
+          {% for a in stats.recent %}
+          <tr>
+            <td>{{ '%.1f'|format(a.target) }}s</td>
+            <td class="num{% if a.delta|abs <= 0.15 %} close{% endif %}">{{ '%+.2f'|format(a.delta) }}s</td>
+            <td class="num">{{ a.score }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+        {% else %}
+        <p class="empty">No attempts recorded yet.</p>
+        {% endif %}
+      </section>
+    </div>
+
+    <script>
+      const targets = [2.0, 2.5, 3.0, 3.5, 4.0];
+      const big = document.getElementById("big");
+      const instruction = document.getElementById("instruction");
+      const startBtn = document.getElementById("start-btn");
+      const stopBtn = document.getElementById("stop-btn");
+      let target = 0, t0 = 0;
+
+      const fav = {{ {"food": player.fav_food, "movie": player.fav_movie, "holiday": player.fav_holiday}|tojson }};
+
+      function taunt() {
+        const lines = [];
+        if (fav.food) lines.push(
+          `Too bad, no ${fav.food} for you.`,
+          `Close. Somebody else is eating your ${fav.food}.`);
+        if (fav.holiday) lines.push(
+          `Too bad, no ${fav.holiday} for you.`,
+          `Not close enough. Your ${fav.holiday} is cancelled.`);
+        if (fav.movie) lines.push(
+          `Too bad, no ${fav.movie} tonight.`,
+          `Almost. ${fav.movie} goes back on the shelf.`);
+        return lines.length ? lines[Math.floor(Math.random() * lines.length)] : null;
+      }
+
+      startBtn.addEventListener("click", () => {
+        target = targets[Math.floor(Math.random() * targets.length)];
+        startBtn.style.display = "none";
+        instruction.textContent = `Target: ${target.toFixed(1)} seconds. Get ready…`;
+        let count = 3;
+        big.textContent = count;
+        const tick = setInterval(() => {
+          count -= 1;
+          if (count > 0) { big.textContent = count; return; }
+          clearInterval(tick);
+          big.textContent = "GO";
+          stopBtn.style.display = "inline-block";
+          t0 = performance.now();
+        }, 700);
+      });
+
+      stopBtn.addEventListener("click", () => {
+        const elapsed = (performance.now() - t0) / 1000;
+        const delta = elapsed - target;
+        const points = Math.max(0, 1000 - Math.round(Math.abs(delta) * 1000));
+        const deltaLabel = `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}s`;
+        stopBtn.style.display = "none";
+        big.textContent = deltaLabel;
+        big.className = Math.abs(delta) <= 0.15 ? "result-good" : "result-bad";
+        const jab = Math.abs(delta) <= 0.25 ? taunt() : null;
+        instruction.textContent = jab
+          ? `${jab} ${points} points. Saving…`
+          : `You stopped at ${elapsed.toFixed(2)}s — ${points} points. Saving…`;
+        document.getElementById("f-target").value = target.toFixed(1);
+        document.getElementById("f-delta").value = deltaLabel;
+        document.getElementById("f-points").value = points;
+        setTimeout(() => document.getElementById("score-form").submit(), jab ? 2500 : 900);
+      });
+    </script>
+    {% endif %}
+  </main>
+
+  <footer>Time Check · a tiny reaction-timing game for IBM Cloud Code Engine</footer>
 </body>
 </html>
