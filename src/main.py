@@ -99,6 +99,24 @@ def player_stats(cur, player_id):
     return {"count": count, "best": best, "recent": recent}
 
 
+def leaderboard(cur, limit=10):
+    """Best score per player across everyone in this database."""
+    cur.execute(
+        """
+        SELECT p.id, p.handle, p.company, MAX(a.score), COUNT(*)
+        FROM attempts a JOIN players p ON p.id = a.player_id
+        GROUP BY p.id, p.handle, p.company
+        ORDER BY MAX(a.score) DESC, p.handle
+        LIMIT %s
+        """,
+        (limit,),
+    )
+    return [
+        {"player_id": i, "handle": h, "company": c, "best": b, "attempts": n}
+        for i, h, c, b, n in cur.fetchall()
+    ]
+
+
 @app.get("/")
 def index():
     if not db_configured():
@@ -111,10 +129,12 @@ def index():
             resp.delete_cookie("player_id")
             return resp
         stats = player_stats(cur, player["id"])
+        board = leaderboard(cur)
     return render_template(
         "index.html",
         player=player,
         stats=stats,
+        board=board,
         save_error=request.args.get("save_error") == "1",
     )
 
