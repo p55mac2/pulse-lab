@@ -167,7 +167,7 @@
   .result-bad  { color: var(--g100-error); }
 
   /* Stats + recent attempts */
-  .stats h2, .recent h2 { font-size: 1.25rem; font-weight: 400; line-height: 1.4; margin-bottom: 1.5rem; }
+  .stats h2, .recent h2, .board h2 { font-size: 1.25rem; font-weight: 400; line-height: 1.4; margin-bottom: 1.5rem; }
   .metric + .metric { margin-top: 1.5rem; }
   .metric .l { font-size: 0.75rem; letter-spacing: 0.32px; color: var(--text-secondary); }
   .metric .n { font-size: 2.625rem; font-weight: 300; line-height: 1.2; }
@@ -183,6 +183,17 @@
   th.num, td.num { text-align: right; }
   td.close { color: #198038; }
   .empty { font-size: 0.875rem; letter-spacing: 0.16px; color: var(--text-secondary); padding: 1.5rem 1rem; background: var(--background); }
+  .board td.name { font-family: var(--sans); overflow-wrap: anywhere; }
+  .board th { white-space: nowrap; }
+  .board td.name.co { color: var(--text-secondary); }
+  .board .co { display: none; }
+  .board tr.me td { background: var(--notification-info-bg); }
+  .board tr.me td:first-child { box-shadow: inset 3px 0 0 var(--interactive); }
+  .you {
+    display: inline-block; margin-left: 0.5rem; padding: 0 0.5rem; border-radius: 1rem;
+    font-size: 0.75rem; line-height: 1.5rem; letter-spacing: 0.32px;
+    background: #d0e2ff; color: #002d9c;
+  }
 
   footer {
     max-width: 82rem; width: 100%; margin: 0 auto; padding: 1.5rem 1rem 2rem;
@@ -190,26 +201,29 @@
   }
 
   /* Game layout: stacked on phones, stats + recent side by side on tablets,
-     arena left with stats and recent attempts on the right on wide screens */
-  .game { grid-template-areas: "arena" "stats" "recent"; }
+     arena left with stats and recent attempts on the right on wide screens;
+     the lab leaderboard spans the full width underneath */
+  .game { grid-template-columns: minmax(0, 1fr); grid-template-areas: "arena" "stats" "recent" "board"; }
   #arena { grid-area: arena; }
   .stats { grid-area: stats; }
   .recent { grid-area: recent; }
+  .board { grid-area: board; }
 
   @media (min-width: 42rem) {
     .shell { padding: 0 1rem 0 1rem; }
     .page, footer { padding-left: 2rem; padding-right: 2rem; }
     .tile { padding: 2rem; }
     #arena { padding: 2rem 2rem 4rem; }
-    .game { grid-template-columns: 1fr 1fr; grid-template-areas: "arena arena" "stats recent"; }
+    .game { grid-template-columns: 1fr 1fr; grid-template-areas: "arena arena" "stats recent" "board board"; }
+    .board .co { display: table-cell; }
   }
   @media (min-width: 66rem) {
     .join { grid-template-columns: 1fr 1fr; }
     .join .intro { padding-right: 2rem; }
     .game {
       grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-      grid-template-rows: auto 1fr;
-      grid-template-areas: "arena stats" "arena recent";
+      grid-template-rows: auto 1fr auto;
+      grid-template-areas: "arena stats" "arena recent" "board board";
     }
   }
 </style>
@@ -330,6 +344,27 @@
         </table>
         {% else %}
         <p class="empty">No attempts recorded yet.</p>
+        {% endif %}
+      </section>
+
+      <section class="tile board">
+        <h2>Lab leaderboard</h2>
+        {% if board %}
+        <table>
+          <tr><th>#</th><th>Player</th><th class="co">Company</th><th class="num co">Attempts</th><th class="num">Best score</th></tr>
+          {% for row in board %}
+          {% set me = row.player_id == player.id %}
+          <tr{% if me %} class="me"{% endif %}>
+            <td>{{ '%02d'|format(loop.index) }}</td>
+            <td class="name">{{ row.handle }}{% if me %} <span class="you">You</span>{% endif %}</td>
+            <td class="name co">{{ row.company or "" }}</td>
+            <td class="num co">{{ row.attempts }}</td>
+            <td class="num">{{ row.best }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+        {% else %}
+        <p class="empty">No scores on the board yet.</p>
         {% endif %}
       </section>
     </div>
