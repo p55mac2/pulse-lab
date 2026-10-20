@@ -61,11 +61,18 @@ def parse_delta_seconds(raw):
 def current_player(cur, player_id):
     if not player_id:
         return None
-    cur.execute("SELECT id, handle, company FROM players WHERE id = %s", (player_id,))
+    cur.execute(
+        """
+        SELECT id, handle, company, fav_food, fav_movie, fav_holiday
+        FROM players WHERE id = %s
+        """,
+        (player_id,),
+    )
     row = cur.fetchone()
     if not row:
         return None
-    return {"id": row[0], "handle": row[1], "company": row[2]}
+    keys = ("id", "handle", "company", "fav_food", "fav_movie", "fav_holiday")
+    return dict(zip(keys, row))
 
 
 def player_stats(cur, player_id):
