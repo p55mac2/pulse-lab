@@ -48,6 +48,16 @@ def init_db():
         log.exception("Could not apply schema at startup.")
 
 
+def parse_delta_seconds(raw):
+    """Parse a submitted delta such as '+0.42s', '-0.13s', or '0.42' into a float.
+
+    The client formats the delta for display; never trust that formatting on
+    the write path — strip the sign prefix and unit suffix before storing.
+    """
+    cleaned = raw.strip().lower().removesuffix("s").removeprefix("+")
+    return float(cleaned)
+
+
 def current_player(cur, player_id):
     if not player_id:
         return None
@@ -164,9 +174,15 @@ def register():
 @app.post("/score")
 def score():
     player_id = request.cookies.get("player_id")
-    target = request.form.get("target", "")
-    delta = request.form.get("delta", "")
-    points = request.form.get("points", "")
+    raw_target = request.form.get("target", "")
+    raw_delta = request.form.get("delta", "")
+    try:
+        target = float(raw_target)
+        delta = parse_delta_seconds(raw_delta)
+        points = max(0, 1000 - round(abs(delta) * 1000))
+    except ValueError:
+        log.warning("Rejected malformed attempt: target=%r delta=%r", raw_target, raw_delta)
+        return redirect(url_for("index", save_error=1))
     try:
         with db() as conn, conn.cursor() as cur:
             cur.execute(
